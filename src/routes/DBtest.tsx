@@ -20,6 +20,7 @@ const mapRowToAlbum = (row: any, songs: Song[]): Album => ({
   release_date: row.release_date as string,
   coverart_url: row.coverart_url as string,
   songs: songs.filter(song => song.album_id === (row.a_id as number)),
+  is_published: Boolean(row.is_published),
 });
 
 // Fetching function for Tanstack Query
@@ -35,7 +36,8 @@ const fetchAlbumsAndSongs = async (): Promise<Album[]> => {
       s.duration_seconds,
       s.track_number,
       s.is_single,
-      s.album_id
+      s.album_id,
+      a.is_published
     FROM albums a
     LEFT JOIN songs s ON a.id = s.album_id
     ORDER BY a.release_date DESC, s.track_number ASC;

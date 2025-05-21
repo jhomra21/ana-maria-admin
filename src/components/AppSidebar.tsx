@@ -53,9 +53,9 @@ export function AppSidebar() {
           "left-0": state() === "expanded",
           "-left-0.5": state() === "collapsed"
         }} />
-        <span class="transition-all duration-200 pl-7 transform-gpu" classList={{ 
-          "opacity-0 blur-md pointer-events-none absolute text-2xl": state() === "collapsed",
-          "opacity-100 blur-0": state() === "expanded"
+        <span class="transition-all duration-200 pl-7" classList={{ 
+          "opacity-0 pointer-events-none absolute text-2xl": state() === "collapsed",
+          "opacity-100": state() === "expanded"
         }}>
           {route.name}
         </span>

@@ -12,5 +12,13 @@ export interface Album {
   title: string;
   release_date: string;
   coverart_url: string;
+  is_published: boolean;
   songs: Song[];
+}
+
+export interface AlbumFormData {
+  title: string;
+  release_date: string; // Keep as string for form input (YYYY-MM-DD)
+  coverart_url: string | null;
+  is_published: boolean;
 } 

@@ -171,6 +171,7 @@ const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       refetchOnMount: false,
       refetchOnReconnect: true,
+      gcTime: 1000 * 60 * 30, // 30 minutes
     },
   },
 });

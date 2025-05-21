@@ -25,6 +25,7 @@ const mapRowToAlbum = (row: any, songs: Song[]): Album => ({
   title: row.a_title as string,
   release_date: row.release_date as string,
   coverart_url: row.coverart_url as string,
+  is_published: Boolean(row.is_published),
   songs: songs.filter(song => song.album_id === (row.a_id as number)),
 });
 
@@ -38,6 +39,7 @@ albums.get('/', async (c) => {
         a.title AS a_title,
         a.release_date,
         a.coverart_url,
+        a.is_published,
         s.id AS s_id,
         s.title AS s_title,
         s.duration_seconds,
@@ -91,6 +93,7 @@ albums.get('/:id', async (c) => {
         a.title AS a_title,
         a.release_date,
         a.coverart_url,
+        a.is_published,
         s.id AS s_id,
         s.title AS s_title,
         s.duration_seconds,
@@ -137,14 +140,14 @@ albums.post('/', async (c) => {
     }
     
     const query = `
-      INSERT INTO albums (title, release_date, coverart_url)
-      VALUES (?, ?, ?)
-      RETURNING id, title, release_date, coverart_url;
+      INSERT INTO albums (title, release_date, coverart_url, is_published)
+      VALUES (?, ?, ?, ?)
+      RETURNING id, title, release_date, coverart_url, is_published;
     `;
     
     const result = await turso.execute({
       sql: query,
-      args: [body.title, body.release_date, body.coverart_url || null]
+      args: [body.title, body.release_date, body.coverart_url || null, body.is_published ? 1 : 0]
     });
 
     if (result.rows.length === 0) {
@@ -156,6 +159,7 @@ albums.post('/', async (c) => {
       title: result.rows[0].title as string,
       release_date: result.rows[0].release_date as string,
       coverart_url: result.rows[0].coverart_url as string || null,
+      is_published: Boolean(result.rows[0].is_published),
       songs: []
     };
     
@@ -188,14 +192,14 @@ albums.put('/:id', async (c) => {
     
     const query = `
       UPDATE albums 
-      SET title = ?, release_date = ?, coverart_url = ?
+      SET title = ?, release_date = ?, coverart_url = ?, is_published = ?
       WHERE id = ?
-      RETURNING id, title, release_date, coverart_url;
+      RETURNING id, title, release_date, coverart_url, is_published;
     `;
     
     const result = await turso.execute({
       sql: query,
-      args: [body.title, body.release_date, body.coverart_url || null, id]
+      args: [body.title, body.release_date, body.coverart_url || null, body.is_published ? 1 : 0, id]
     });
 
     // Fetch songs for the album
@@ -216,6 +220,7 @@ albums.put('/:id', async (c) => {
       title: result.rows[0].title as string,
       release_date: result.rows[0].release_date as string,
       coverart_url: result.rows[0].coverart_url as string || null,
+      is_published: Boolean(result.rows[0].is_published),
       songs
     };
     
