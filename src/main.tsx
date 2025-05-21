@@ -11,7 +11,6 @@ import { render } from 'solid-js/web'
 import { Show} from 'solid-js'
 import { Transition } from 'solid-transition-group'
 import { QueryClient, QueryClientProvider } from '@tanstack/solid-query'
-import SkeuIcongenPage from './routes/SkeuIcongenPage'
 import DBTest from './routes/DBtest'
 // Import admin routes
 import AlbumsPage from './routes/admin/albums'
@@ -99,15 +98,11 @@ const rootRoute = createRootRoute({
   },
 })
 
+
+
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
-  component: SkeuIcongenPage,
-})
-
-const dbTestRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/DBtest',
   component: DBTest,
   errorComponent: () => (
     <div class="p-4 text-red-500">
@@ -120,7 +115,7 @@ const dbTestRoute = createRoute({
 // Admin routes
 const adminAlbumsRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/admin/albums',
+  path: '/albums',
   component: AlbumsPage,
   errorComponent: () => (
     <div class="p-4 text-red-500">
@@ -132,7 +127,7 @@ const adminAlbumsRoute = createRoute({
 
 const adminSongsRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/admin/songs',
+  path: '/songs',
   component: SongsPage,
   errorComponent: () => (
     <div class="p-4 text-red-500">
@@ -146,7 +141,6 @@ const adminSongsRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   indexRoute, 
-  dbTestRoute,
   adminAlbumsRoute,
   adminSongsRoute,
 ])

@@ -22,12 +22,11 @@ import {
 
 export const navRoutes: { path: string; name: string; iconName: IconName }[] = [
   { path: '/', name: 'Home', iconName: 'house' },
-  { path: '/DBtest', name: 'DBtest', iconName: 'database' },
 ];
 
 export const adminRoutes: { path: string; name: string; iconName: IconName }[] = [
-  { path: '/admin/albums', name: 'Albums', iconName: 'music' },
-  { path: '/admin/songs', name: 'Songs', iconName: 'musicNote' },
+  { path: '/albums', name: 'Albums', iconName: 'music' },
+  { path: '/songs', name: 'Songs', iconName: 'musicNote' },
 ];
 
 export function AppSidebar() {

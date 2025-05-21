@@ -3,6 +3,9 @@ import { useQuery } from "@tanstack/solid-query";
 import { turso } from "../lib/turso";
 import type { Album, Song } from "../lib/types";
 import { AlbumCard } from "../components/AlbumCard";
+import { Button } from "~/components/ui/button";
+import { Icon } from "~/components/ui/icon";
+import { Link } from "@tanstack/solid-router";
 
 // Helper function to map database rows to TypeScript objects
 const mapRowToSong = (row: any): Song => ({
@@ -76,6 +79,20 @@ export default function DBTest() {
   return (
     <div class="container mx-auto p-4 sm:p-6 lg:p-8">
       <h1 class="text-3xl font-bold mb-6 text-center">Ana Maria's Discography</h1>
+      <div class="flex justify-center items-center gap-4 mb-6">
+        <Button>
+          <Icon name="music" />
+          <Link to="/albums">
+            Albums
+          </Link>
+        </Button>
+        <Button>
+          <Icon name="musicNote" />
+          <Link to="/songs">
+            Songs
+          </Link>
+        </Button>
+      </div>
       
       <Show when={albumsQuery.isLoading}>
         <div class="flex justify-center items-center min-h-[40vh]">
