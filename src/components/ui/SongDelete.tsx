@@ -1,7 +1,15 @@
-import { createSignal, createEffect } from "solid-js";
+import { createSignal } from "solid-js";
 import { createMutation, useQueryClient } from "@tanstack/solid-query";
 import { Button } from "./button";
-import { cn } from "~/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "./dialog";
 
 // Function to delete a song from the API
 const deleteSong = async (songId: number): Promise<void> => {
@@ -20,28 +28,13 @@ const deleteSong = async (songId: number): Promise<void> => {
 interface SongDeleteProps {
   songId: number;
   songTitle: string;
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
 }
 
 export function SongDelete(props: SongDeleteProps) {
   const queryClient = useQueryClient();
-  const [isConfirming, setIsConfirming] = createSignal(false);
-  
-  // Reset confirmation state after timeout
-  createEffect(() => {
-    let timeoutId: number | undefined;
-    
-    if (isConfirming()) {
-      timeoutId = window.setTimeout(() => {
-        setIsConfirming(false);
-      }, 5000); // 5 seconds timeout
-    }
-    
-    return () => {
-      if (timeoutId) {
-        window.clearTimeout(timeoutId);
-      }
-    };
-  });
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = createSignal(false);
 
   // Delete song mutation
   const deleteSongMutation = createMutation(() => ({
@@ -49,103 +42,58 @@ export function SongDelete(props: SongDeleteProps) {
     onSuccess: () => {
       // Invalidate and refetch songs query
       queryClient.invalidateQueries({ queryKey: ["songs"] });
-      setIsConfirming(false);
+      setIsDeleteDialogOpen(false);
+      if (props.onSuccess) {
+        props.onSuccess();
+      }
     },
     onError: (error: Error) => {
       console.error("Error deleting song:", error);
       alert(`Failed to delete song: ${error.message}`);
-      setIsConfirming(false);
+      setIsDeleteDialogOpen(false);
+      if (props.onError) {
+        props.onError(error);
+      }
     }
   }));
 
   const handleDelete = () => {
-    if (!isConfirming()) {
-      setIsConfirming(true);
-      return;
-    }
-    
-    // User confirmed, proceed with deletion
     deleteSongMutation.mutate();
-  };
-  
-  const handleCancel = () => {
-    setIsConfirming(false);
   };
 
   return (
-    <div 
-      class={cn(
-        "relative overflow-hidden min-w-[80px] h-9 rounded-md",
-        "transition-all duration-300 ease-out",
-        "w-[50%]"
-      )}
-    >
-      {/* Normal Delete Button - Always visible but changes opacity */}
-      <div 
-        class={cn(
-          "absolute inset-0 transition-all duration-300 ease-out",
-          isConfirming() ? "opacity-0 transform scale-95" : "opacity-100 transform scale-100"
-        )}
-      >
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          disabled={deleteSongMutation.isPending || isConfirming()}
-          onClick={handleDelete}
-          class="w-full h-full text-red-600 hover:text-red-700 transition-colors duration-200"
-        >
-          <span class="flex items-center justify-center whitespace-nowrap">
-            {deleteSongMutation.isPending ? "Deleting..." : "Delete"}
-          </span>
-        </Button>
-      </div>
-
-      {/* Confirmation State - Split button layout */}
-      <div 
-        class={cn(
-          "absolute inset-0 flex transition-all duration-300 ease-out",
-          isConfirming() 
-            ? "opacity-100 transform translate-y-0 scale-100" 
-            : "opacity-0 transform translate-y-1 scale-95"
-        )}
-      >
-        {/* Delete confirm button - 70% width */}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={deleteSongMutation.isPending}
-          onClick={handleDelete}
-          class={cn(
-            "w-[70%] rounded-r-none border-r-0",
-            "bg-red-600 text-white hover:bg-red-700 hover:text-white",
-            "transition-colors duration-200 ease-out shadow-sm"
-          )}
-        >
-          <span class="flex items-center justify-center whitespace-nowrap">
-            {deleteSongMutation.isPending ? "Deleting..." : "Delete"}
-          </span>
-        </Button>
-        
-        {/* Cancel button - 30% width */}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={deleteSongMutation.isPending}
-          onClick={handleCancel}
-          class={cn(
-            "w-[30%] rounded-l-none border-l-0",
-            "bg-gray-100 hover:bg-gray-200 text-gray-700",
-            "transition-colors duration-200 ease-out shadow-sm"
-          )}
-        >
-          <span class="flex items-center justify-center">
-            ✕
-          </span>
-        </Button>
-      </div>
-    </div>
+    <Dialog open={isDeleteDialogOpen()} onOpenChange={setIsDeleteDialogOpen}>
+      <DialogTrigger as={Button} variant="ghost" size="sm" class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300">
+        Delete
+      </DialogTrigger>
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Confirm Deletion</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete the song "{props.songTitle}"? 
+            This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter class="sm:justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setIsDeleteDialogOpen(false)}
+            class="mr-2"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={deleteSongMutation.isPending}
+            class="text-white"
+          >
+            {deleteSongMutation.isPending ? "Deleting..." : "Delete Song"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 } 

@@ -48,14 +48,14 @@ export function AppSidebar() {
       <div class="flex items-center gap-2 relative w-full">
         <Icon 
           name={route.iconName} 
-          class="h-5 w-5 absolute transition-all duration-[var(--sidebar-animation-duration)] ease-in-out" 
+          class="h-5 w-5 absolute transition-[left] duration-[var(--sidebar-animation-duration)] ease-in-out" 
           classList={{
             "left-0": state() === "expanded",
             "-left-0.5": state() === "collapsed"
           }} 
         />
         <span 
-          class="pl-7 transition-all duration-[var(--sidebar-animation-duration)] ease-in-out" 
+          class="pl-7 transition-[opacity] duration-[var(--sidebar-animation-duration)] ease-in-out" 
           classList={{ 
             "opacity-0 pointer-events-none absolute": state() === "collapsed",
             "opacity-100": state() === "expanded"

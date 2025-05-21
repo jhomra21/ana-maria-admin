@@ -1,4 +1,4 @@
-import { createSignal, For, Show } from "solid-js";
+import { createSignal, For, Show, createMemo } from "solid-js";
 import { useQuery, useQueryClient } from "@tanstack/solid-query";
 import type { Album } from "../../../lib/types";
 import { Button } from "~/components/ui/button";
@@ -29,6 +29,17 @@ export default function AlbumsPage() {
     queryFn: fetchAlbums,
   }));
   
+  // Pre-process albums data when it loads
+  const processedAlbums = createMemo(() => {
+    if (!albumsQuery.data) return [];
+    
+    return albumsQuery.data.map(album => ({
+      ...album,
+      // Pre-format release date to avoid doing it during render
+      formattedReleaseDate: new Date(album.release_date).toLocaleDateString()
+    }));
+  });
+  
   const openEditDialog = (album: Album) => {
     setEditingAlbum(album);
     setIsEditAlbumDialogOpen(true);
@@ -54,19 +65,23 @@ export default function AlbumsPage() {
           class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
           Create Album
         </Button>
-        <AddAlbumDialog 
-          open={isAddAlbumDialogOpen}
-          onOpenChange={setIsAddAlbumDialogOpen}
-          onAlbumAdded={handleAlbumAdded}
-        />
+        <Show when={isAddAlbumDialogOpen()}>
+          <AddAlbumDialog 
+            open={isAddAlbumDialogOpen}
+            onOpenChange={setIsAddAlbumDialogOpen}
+            onAlbumAdded={handleAlbumAdded}
+          />
+        </Show>
       </div>
       
-      <EditAlbumDialog
-        open={isEditAlbumDialogOpen}
-        onOpenChange={setIsEditAlbumDialogOpen}
-        albumToEdit={editingAlbum}
-        onAlbumUpdated={handleAlbumUpdated}
-      />
+      <Show when={isEditAlbumDialogOpen()}>
+        <EditAlbumDialog
+          open={isEditAlbumDialogOpen}
+          onOpenChange={setIsEditAlbumDialogOpen}
+          albumToEdit={editingAlbum}
+          onAlbumUpdated={handleAlbumUpdated}
+        />
+      </Show>
 
       <Show when={albumsQuery.isLoading}>
         <div class="flex justify-center items-center h-64">
@@ -88,7 +103,7 @@ export default function AlbumsPage() {
             <TableCaption>Albums</TableCaption>
             <TableHeader>
               <TableRow>
-                <TableHead class="w-1/6">Cover</TableHead>
+                {/* <TableHead class="w-1/6">Cover</TableHead> */}
                 <TableHead class="w-1/3">Title</TableHead>
                 <TableHead class="w-1/6">Release Date</TableHead>
                 <TableHead class="w-1/12">Status</TableHead>
@@ -107,7 +122,7 @@ export default function AlbumsPage() {
                   </TableRow>
                 }
               >
-                <For each={albumsQuery.data}>
+                <For each={processedAlbums()}>
                   {(album) => (
                     <TableRow class="hover:bg-gray-50 dark:hover:bg-gray-700">
                       <TableCell>
@@ -116,7 +131,7 @@ export default function AlbumsPage() {
                             src={album.coverart_url || "/placeholder-album.jpg"}
                             alt={`${album.title} cover`}
                             class="h-full w-full object-cover"
-                            onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/placeholder-album.jpg"; }}
+                            loading="lazy"
                           />
                         </div>
                       </TableCell>
@@ -127,7 +142,7 @@ export default function AlbumsPage() {
                       </TableCell>
                       <TableCell>
                         <div class="text-sm text-gray-500 dark:text-gray-400">
-                          {new Date(album.release_date).toLocaleDateString()}
+                          {album.formattedReleaseDate}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -146,15 +161,19 @@ export default function AlbumsPage() {
                       </TableCell>
                       <TableCell class="text-right">
                         <div class="flex justify-end items-center gap-2 pr-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditDialog(album)}
-                          class="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
-                        >
-                          Edit
-                        </Button>
-                        <AlbumDelete albumId={album.id} albumTitle={album.title} />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEditDialog(album)}
+                            class="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
+                          >
+                            Edit
+                          </Button>
+                          <AlbumDelete 
+                            albumId={album.id} 
+                            albumTitle={album.title}
+                            onSuccess={() => queryClient.invalidateQueries({ queryKey: ["albums"] })}
+                          />
                         </div>
                       </TableCell>
                     </TableRow>

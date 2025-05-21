@@ -8,7 +8,7 @@ import {
 } from '@tanstack/solid-router'
 import { TanStackRouterDevtools } from '@tanstack/solid-router-devtools'
 import { render } from 'solid-js/web'
-import { Show} from 'solid-js'
+import { Show, Suspense } from 'solid-js'
 import { Transition } from 'solid-transition-group'
 import { QueryClient, QueryClientProvider } from '@tanstack/solid-query'
 import DBTest from './routes/DBtest'
@@ -59,37 +59,43 @@ const rootRoute = createRootRoute({
             </div>
           </div>
           <div class="flex-grow overflow-y-auto py-4 relative">
-            <Transition
-              mode="outin"
-              onEnter={(el, done) => {
-                const animation = el.animate(
-                  [
-                    { opacity: 0, transform: 'translateY(10px)' },
-                    { opacity: 1, transform: 'translateY(0px)' }
-                  ],
-                  { duration: 200, easing: 'ease-in-out' }
-                );
-                animation.finished.then(done);
-              }}
-              onExit={(el, done) => {
-                const animation = el.animate(
-                  [
-                    { opacity: 1 },
-                    { opacity: 0 }
-                  ],
-                  { duration: 200, easing: 'ease-in-out' }
-                );
-                animation.finished.then(done);
-              }}
-            >
-              <Show when={location().pathname} keyed>
-                {(_pathname) => ( 
-                  <div class="page-container">
-                    <Outlet />
-                  </div>
-                )}
-              </Show>
-            </Transition>
+            <Suspense fallback={
+              <div class="w-full h-full flex items-center justify-center">
+                <p>Loading...</p>
+              </div>
+            }>
+              <Transition
+                mode="outin"
+                onEnter={(el, done) => {
+                  const animation = el.animate(
+                    [
+                      { opacity: 0, transform: 'translateY(10px)' },
+                      { opacity: 1, transform: 'translateY(0px)' }
+                    ],
+                    { duration: 200, easing: 'ease-in-out' }
+                  );
+                  animation.finished.then(done);
+                }}
+                onExit={(el, done) => {
+                  const animation = el.animate(
+                    [
+                      { opacity: 1 },
+                      { opacity: 0 }
+                    ],
+                    { duration: 150, easing: 'ease-in-out' }
+                  );
+                  animation.finished.then(done);
+                }}
+              >
+                <Show when={location().pathname} keyed>
+                  {(_pathname) => ( 
+                    <div class="page-container">
+                      <Outlet />
+                    </div>
+                  )}
+                </Show>
+              </Transition>
+            </Suspense>
           </div>
           <TanStackRouterDevtools position="bottom-right" />
         </main>
@@ -166,6 +172,7 @@ const queryClient = new QueryClient({
       refetchOnMount: false,
       refetchOnReconnect: true,
       gcTime: 1000 * 60 * 30, // 30 minutes
+      suspense: true,
     },
   },
 });
