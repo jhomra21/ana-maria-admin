@@ -22,6 +22,12 @@ import {
 
 export const navRoutes: { path: string; name: string; iconName: IconName }[] = [
   { path: '/', name: 'Home', iconName: 'house' },
+  { path: '/DBtest', name: 'DBtest', iconName: 'database' },
+];
+
+export const adminRoutes: { path: string; name: string; iconName: IconName }[] = [
+  { path: '/admin/albums', name: 'Albums', iconName: 'music' },
+  { path: '/admin/songs', name: 'Songs', iconName: 'musicNote' },
 ];
 
 export function AppSidebar() {
@@ -36,6 +42,43 @@ export function AppSidebar() {
     }
   };
 
+  const renderNavItem = (route: { path: string; name: string; iconName: IconName }) => {
+    const isActive = createMemo(() => {
+      return currentPath() === route.path;
+    });
+    
+    const linkChildren = children(() => (
+      <div class="flex items-center gap-2 relative w-full">
+        <Icon name={route.iconName} class="h-5 w-5 absolute transition-all duration-200" classList={{
+          "left-0": state() === "expanded",
+          "-left-0.5": state() === "collapsed"
+        }} />
+        <span class="transition-all duration-200 pl-7 transform-gpu" classList={{ 
+          "opacity-0 blur-md pointer-events-none absolute text-2xl": state() === "collapsed",
+          "opacity-100 blur-0": state() === "expanded"
+        }}>
+          {route.name}
+        </span>
+      </div>
+    ));
+
+    return (
+      <SidebarMenuItem>
+        <SidebarMenuButton 
+          as={Link} 
+          to={route.path} 
+          preload="intent"
+          class="w-full text-left"
+          onClick={handleLinkClick}
+          tooltip={route.name}
+          isActive={isActive()}
+        >
+          {linkChildren()} 
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    );
+  };
+
   return (
     <Sidebar collapsible="icon" variant="floating">
       <SidebarContent>
@@ -44,42 +87,18 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               <For each={navRoutes}>
-                {(route) => {
-                  const isActive = createMemo(() => {
-                    return currentPath() === route.path;
-                  });
-                  
-                  const linkChildren = children(() => (
-                    <div class="flex items-center gap-2 relative w-full">
-                      <Icon name={route.iconName} class="h-5 w-5 absolute transition-all duration-200" classList={{
-                        "left-0": state() === "expanded",
-                        "-left-0.5": state() === "collapsed"
-                      }} />
-                      <span class="transition-all duration-200 pl-7 transform-gpu" classList={{ 
-                        "opacity-0 blur-md pointer-events-none absolute text-2xl": state() === "collapsed",
-                        "opacity-100 blur-0": state() === "expanded"
-                      }}>
-                        {route.name}
-                      </span>
-                    </div>
-                  ));
-
-                  return (
-                    <SidebarMenuItem>
-                      <SidebarMenuButton 
-                        as={Link} 
-                        to={route.path} 
-                        preload="intent"
-                        class="w-full text-left"
-                        onClick={handleLinkClick}
-                        tooltip={route.name} // SidebarMenuButton uses this prop
-                        isActive={isActive()}
-                      >
-                        {linkChildren()} 
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                }}
+                {renderNavItem}
+              </For>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        
+        <SidebarGroup>
+          <SidebarGroupLabel>Admin</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <For each={adminRoutes}>
+                {renderNavItem}
               </For>
             </SidebarMenu>
           </SidebarGroupContent>

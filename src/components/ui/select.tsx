@@ -52,25 +52,30 @@ const SelectTrigger = <T extends ValidComponent = "button">(
 }
 
 type SelectContentProps<T extends ValidComponent = "div"> =
-  SelectPrimitive.SelectContentProps<T> & { class?: string | undefined }
+  SelectPrimitive.SelectContentProps<T> & { 
+    class?: string | undefined;
+    portal?: boolean;
+  }
 
 const SelectContent = <T extends ValidComponent = "div">(
   props: PolymorphicProps<T, SelectContentProps<T>>
 ) => {
-  const [local, others] = splitProps(props as SelectContentProps, ["class"])
-  return (
-    <SelectPrimitive.Portal>
-      <SelectPrimitive.Content
-        class={cn(
-          "relative z-50 min-w-32 overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:fade-in-0 data-[closed]:zoom-out-95 data-[expanded]:zoom-in-95",
-          local.class
-        )}
-        {...others}
-      >
-        <SelectPrimitive.Listbox class="m-0 p-1" />
-      </SelectPrimitive.Content>
-    </SelectPrimitive.Portal>
-  )
+  const [local, others] = splitProps(props as SelectContentProps, ["class", "portal"])
+  const shouldPortal = local.portal !== undefined ? local.portal : true;
+
+  const content = (
+    <SelectPrimitive.Content
+      class={cn(
+        "relative z-50 min-w-32 overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[expanded]:animate-in data-[closed]:animate-out data-[closed]:fade-out-0 data-[expanded]:fade-in-0 data-[closed]:zoom-out-95 data-[expanded]:zoom-in-95",
+        local.class 
+      )}
+      {...others}
+    >
+      <SelectPrimitive.Listbox class="m-0 p-1" />
+    </SelectPrimitive.Content>
+  );
+
+  return shouldPortal ? <SelectPrimitive.Portal>{content}</SelectPrimitive.Portal> : content;
 }
 
 type SelectItemProps<T extends ValidComponent = "li"> = SelectPrimitive.SelectItemProps<T> & {

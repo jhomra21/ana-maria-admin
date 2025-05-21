@@ -12,6 +12,10 @@ import { Show} from 'solid-js'
 import { Transition } from 'solid-transition-group'
 import { QueryClient, QueryClientProvider } from '@tanstack/solid-query'
 import SkeuIcongenPage from './routes/SkeuIcongenPage'
+import DBTest from './routes/DBtest'
+// Import admin routes
+import AlbumsPage from './routes/admin/albums'
+import SongsPage from './routes/admin/songs'
 
 import './styles.css'
 
@@ -101,7 +105,51 @@ const indexRoute = createRoute({
   component: SkeuIcongenPage,
 })
 
-const routeTree = rootRoute.addChildren([indexRoute])
+const dbTestRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/DBtest',
+  component: DBTest,
+  errorComponent: () => (
+    <div class="p-4 text-red-500">
+      An error occurred while loading this component. 
+      Please check the console for more details.
+    </div>
+  )
+})
+
+// Admin routes
+const adminAlbumsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin/albums',
+  component: AlbumsPage,
+  errorComponent: () => (
+    <div class="p-4 text-red-500">
+      An error occurred while loading the Albums page. 
+      Please check the console for more details.
+    </div>
+  )
+})
+
+const adminSongsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/admin/songs',
+  component: SongsPage,
+  errorComponent: () => (
+    <div class="p-4 text-red-500">
+      An error occurred while loading the Songs page. 
+      Please check the console for more details.
+    </div>
+  )
+})
+
+// Add more admin routes as needed
+
+const routeTree = rootRoute.addChildren([
+  indexRoute, 
+  dbTestRoute,
+  adminAlbumsRoute,
+  adminSongsRoute,
+])
 
 const router = createRouter({
   routeTree,
@@ -116,7 +164,16 @@ declare module '@tanstack/solid-router' {
 }
 
 // Create a new QueryClient instance
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      refetchOnReconnect: true,
+    },
+  },
+});
 
 function MainApp() {
   return (
