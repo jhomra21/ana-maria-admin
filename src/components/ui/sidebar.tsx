@@ -34,6 +34,7 @@ const SIDEBAR_WIDTH = "16rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
+const SIDEBAR_ANIMATION_DURATION = 200
 
 type SidebarContext = {
   state: Accessor<"expanded" | "collapsed">
@@ -102,14 +103,24 @@ const SidebarProvider: Component<SidebarProviderProps> = (rawProps) => {
       return local.onOpenChange?.(typeof value === "function" ? value(open()) : value)
     }
     _setOpen(value)
-
-    // This sets the cookie to keep the sidebar state.
-    document.cookie = `${SIDEBAR_COOKIE_NAME}=${open()}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+    
+    // Write cookie in a non-blocking way to prevent UI lag
+    setTimeout(() => {
+      document.cookie = `${SIDEBAR_COOKIE_NAME}=${open()}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+    }, 0)
   }
 
-  // Helper to toggle the sidebar.
+  // Optimize state changes by pre-computing values
+  const state = createMemo(() => (open() ? "expanded" : "collapsed"))
+ 
+  // Improved toggle function that matches shadcn's approach
   const toggleSidebar = () => {
-    return isMobile() ? setOpenMobile((open) => !open) : setOpen((open) => !open)
+    if (isMobile()) {
+      setOpenMobile((open) => !open)
+    } else {
+      // Set state directly with no delay to ensure animation runs smoothly
+      setOpen((prev) => !prev)
+    }
   }
 
   // Adds a keyboard shortcut to toggle the sidebar.
@@ -124,10 +135,6 @@ const SidebarProvider: Component<SidebarProviderProps> = (rawProps) => {
     window.addEventListener("keydown", handleKeyDown)
     onCleanup(() => window.removeEventListener("keydown", handleKeyDown))
   })
-
-  // We add a state so that we can do data-state="expanded" or "collapsed".
-  // This makes it easier to style the sidebar with Tailwind classes.
-  const state = () => (open() ? "expanded" : "collapsed")
 
   const contextValue = {
     state,
@@ -213,11 +220,14 @@ const Sidebar: Component<SidebarProps> = (rawProps) => {
           data-collapsible={state() === "collapsed" ? local.collapsible : ""}
           data-variant={local.variant}
           data-side={local.side}
+          style={{
+            "--sidebar-animation-duration": `${SIDEBAR_ANIMATION_DURATION}ms`
+          }}
         >
-          {/* This is what handles the sidebar gap on desktop */}
+          {/* This handles the sidebar gap on desktop - similar to shadcn approach */}
           <div
             class={cn(
-              "w-(--sidebar-width) relative h-svh bg-transparent transition-[width] duration-150 ease-linear",
+              "relative w-(--sidebar-width) h-svh bg-transparent transition-all duration-[var(--sidebar-animation-duration)] ease-in-out",
               "group-data-[collapsible=offcanvas]:w-0",
               "group-data-[side=right]:rotate-180",
               local.variant === "floating" || local.variant === "inset"
@@ -227,7 +237,7 @@ const Sidebar: Component<SidebarProps> = (rawProps) => {
           />
           <div
             class={cn(
-              "w-(--sidebar-width) fixed inset-y-0 z-10 hidden h-svh transition-[left,right,width] duration-150 ease-linear md:flex",
+              "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-all duration-[var(--sidebar-animation-duration)] ease-in-out md:flex",
               local.side === "left"
                 ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
                 : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
@@ -241,7 +251,11 @@ const Sidebar: Component<SidebarProps> = (rawProps) => {
           >
             <div
               data-sidebar="sidebar"
-              class="flex size-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
+              class={cn(
+                "flex size-full flex-col bg-sidebar",
+                "transition-all duration-[var(--sidebar-animation-duration)] ease-in-out",
+                "group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
+              )}
             >
               {local.children}
             </div>
@@ -301,7 +315,7 @@ const SidebarRail: Component<ComponentProps<"button">> = (props) => {
       onClick={toggleSidebar}
       title="Toggle Sidebar"
       class={cn(
-        "absolute inset-y-0 z-20 hidden w-4 -translate-x-1/2 transition-all ease-linear duration-150 after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] hover:after:bg-sidebar-border group-data-[side=left]:-right-4 group-data-[side=right]:left-0 sm:flex",
+        "absolute inset-y-0 z-20 hidden w-4 -translate-x-1/2 transition-transform duration-150 ease-out after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] hover:after:bg-sidebar-border group-data-[side=left]:-right-4 group-data-[side=right]:left-0 sm:flex",
         "[[data-side=left]_&]:cursor-w-resize [[data-side=right]_&]:cursor-e-resize",
         "[[data-side=left][data-state=collapsed]_&]:cursor-e-resize [[data-side=right][data-state=collapsed]_&]:cursor-w-resize",
         "group-data-[collapsible=offcanvas]:translate-x-0 group-data-[collapsible=offcanvas]:after:left-full group-data-[collapsible=offcanvas]:hover:bg-sidebar",
@@ -319,7 +333,7 @@ const SidebarInset: Component<ComponentProps<"main">> = (props) => {
   return (
     <main
       class={cn(
-        "relative flex min-h-svh flex-1 flex-col bg-background",
+        "relative flex min-h-svh flex-1 flex-col bg-background will-change-transform",
         "peer-data-[variant=inset]:min-h-[calc(100svh-theme(spacing.4))] md:peer-data-[variant=inset]:m-2 md:peer-data-[state=collapsed]:peer-data-[variant=inset]:ml-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow",
         local.class
       )}
@@ -412,7 +426,7 @@ const SidebarGroupLabel = <T extends ValidComponent = "div">(
       as="div"
       data-sidebar="group-label"
       class={cn(
-        "flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 outline-none ring-sidebar-ring transition-[margin,opa] duration-150 ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
+        "flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 outline-none ring-sidebar-ring transition-all duration-[var(--sidebar-animation-duration)] ease-in-out focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
         "group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0",
         local.class
       )}
@@ -467,7 +481,7 @@ const SidebarMenuItem: Component<ComponentProps<"li">> = (props) => {
 }
 
 const sidebarMenuButtonVariants = cva(
-  "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding] duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-2 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 group-data-[collapsible=icon]:justify-center",
+  "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-all duration-[var(--sidebar-animation-duration)] ease-in-out hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-2 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 group-data-[collapsible=icon]:justify-center",
   {
     variants: {
       variant: {
@@ -548,7 +562,7 @@ const SidebarMenuAction = <T extends ValidComponent = "button">(
       as="button"
       data-sidebar="menu-action"
       class={cn(
-        "absolute right-1 top-1.5 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-none ring-sidebar-ring transition-transform duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 peer-hover/menu-button:text-sidebar-accent-foreground [&>svg]:size-4 [&>svg]:shrink-0",
+        "absolute right-1 top-1.5 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-none ring-sidebar-ring transition-opacity duration-150 ease-out hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 peer-hover/menu-button:text-sidebar-accent-foreground [&>svg]:size-4 [&>svg]:shrink-0",
         // Increases the hit area of the button on mobile.
         "after:absolute after:-inset-2 after:md:hidden",
         "peer-data-[size=sm]/menu-button:top-1",
@@ -618,8 +632,8 @@ const SidebarMenuSub: Component<ComponentProps<"ul">> = (props) => {
     <ul
       data-sidebar="menu-sub"
       class={cn(
-        "mx-3.5 flex min-w-0 translate-x-px flex-col gap-1 border-l border-sidebar-border px-2.5 py-0.5",
-        "group-data-[collapsible=icon]:hidden",
+        "mx-3.5 flex min-w-0 translate-x-px flex-col gap-1 border-l border-sidebar-border px-2.5 py-0.5 transition-opacity duration-150 ease-out will-change-opacity",
+        "group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:pointer-events-none",
         local.class
       )}
       {...others}

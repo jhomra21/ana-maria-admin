@@ -33,7 +33,7 @@ export function AppSidebar() {
   const { setOpenMobile, isMobile, state } = useSidebar();
   const location = useLocation();
   
-  const currentPath = () => location().pathname;
+  const currentPath = createMemo(() => location().pathname);
 
   const handleLinkClick = () => {
     if (isMobile()) {
@@ -42,24 +42,31 @@ export function AppSidebar() {
   };
 
   const renderNavItem = (route: { path: string; name: string; iconName: IconName }) => {
-    const isActive = createMemo(() => {
-      return currentPath() === route.path;
-    });
+    const isActive = createMemo(() => currentPath() === route.path);
     
-    const linkChildren = children(() => (
+    const linkContent = createMemo(() => (
       <div class="flex items-center gap-2 relative w-full">
-        <Icon name={route.iconName} class="h-5 w-5 absolute transition-all duration-200" classList={{
-          "left-0": state() === "expanded",
-          "-left-0.5": state() === "collapsed"
-        }} />
-        <span class="transition-all duration-200 pl-7" classList={{ 
-          "opacity-0 pointer-events-none absolute text-2xl": state() === "collapsed",
-          "opacity-100": state() === "expanded"
-        }}>
+        <Icon 
+          name={route.iconName} 
+          class="h-5 w-5 absolute transition-all duration-[var(--sidebar-animation-duration)] ease-in-out" 
+          classList={{
+            "left-0": state() === "expanded",
+            "-left-0.5": state() === "collapsed"
+          }} 
+        />
+        <span 
+          class="pl-7 transition-all duration-[var(--sidebar-animation-duration)] ease-in-out" 
+          classList={{ 
+            "opacity-0 pointer-events-none absolute": state() === "collapsed",
+            "opacity-100": state() === "expanded"
+          }}
+        >
           {route.name}
         </span>
       </div>
     ));
+
+    const linkChildren = children(() => linkContent());
 
     return (
       <SidebarMenuItem>
