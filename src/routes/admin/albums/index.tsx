@@ -24,9 +24,12 @@ export default function AlbumsPage() {
   const [isEditAlbumDialogOpen, setIsEditAlbumDialogOpen] = createSignal(false);
   const [editingAlbum, setEditingAlbum] = createSignal<Album | null>(null);
   
+  // Use the query client to access the data that was loaded by the router
   const albumsQuery = useQuery(() => ({
     queryKey: ["albums"],
     queryFn: fetchAlbums,
+    initialData: queryClient.getQueryData(["albums"]),
+    staleTime: 5 * 60 * 1000 // 5 minutes
   }));
   
   // Pre-process albums data when it loads

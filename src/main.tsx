@@ -1,10 +1,10 @@
 import {
   Outlet,
   RouterProvider,
-  createRootRoute,
   createRoute,
   createRouter,
   useLocation,
+  createRootRouteWithContext,
 } from '@tanstack/solid-router'
 import { TanStackRouterDevtools } from '@tanstack/solid-router-devtools'
 import { render } from 'solid-js/web'
@@ -15,6 +15,7 @@ import DBTest from './routes/DBtest'
 // Import admin routes
 import AlbumsPage from './routes/admin/albums'
 import SongsPage from './routes/admin/songs'
+import { fetchAlbums, fetchSongs } from './lib/apiService'
 
 import './styles.css'
 
@@ -25,7 +26,13 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "./components/ui/tooltip"
 import { AppSidebar, navRoutes } from './components/AppSidebar'
 
-const rootRoute = createRootRoute({
+// Define router context type with QueryClient
+interface RouterContext {
+  queryClient: QueryClient
+}
+
+// Create root route with context
+const rootRoute = createRootRouteWithContext<RouterContext>()({
   component: () => {
     const location = useLocation();
 
@@ -104,8 +111,6 @@ const rootRoute = createRootRoute({
   },
 })
 
-
-
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
@@ -118,11 +123,19 @@ const indexRoute = createRoute({
   )
 })
 
-// Admin routes
+// Admin routes with loaders
 const adminAlbumsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/albums',
   component: AlbumsPage,
+  loader: async ({ context: { queryClient } }) => {
+    // Ensure album data is loaded before rendering the component
+    return queryClient.ensureQueryData({
+      queryKey: ['albums'],
+      queryFn: fetchAlbums,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    });
+  },
   errorComponent: () => (
     <div class="p-4 text-red-500">
       An error occurred while loading the Albums page. 
@@ -135,6 +148,14 @@ const adminSongsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/songs',
   component: SongsPage,
+  loader: async ({ context: { queryClient } }) => {
+    // Ensure song data is loaded before rendering the component
+    return queryClient.ensureQueryData({
+      queryKey: ['songs'],
+      queryFn: fetchSongs,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    });
+  },
   errorComponent: () => (
     <div class="p-4 text-red-500">
       An error occurred while loading the Songs page. 
@@ -151,18 +172,6 @@ const routeTree = rootRoute.addChildren([
   adminSongsRoute,
 ])
 
-const router = createRouter({
-  routeTree,
-  defaultPreload: 'intent',
-  scrollRestoration: true,
-})
-
-declare module '@tanstack/solid-router' {
-  interface Register {
-    router: typeof router
-  }
-}
-
 // Create a new QueryClient instance
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -176,6 +185,16 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Create router with context
+const router = createRouter({
+  routeTree,
+  defaultPreload: 'intent',
+  scrollRestoration: true,
+  context: {
+    queryClient, // Provide queryClient to all routes
+  }
+})
 
 function MainApp() {
   return (

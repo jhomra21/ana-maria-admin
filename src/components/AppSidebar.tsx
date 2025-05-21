@@ -12,6 +12,8 @@ import {
   SidebarMenuItem,
   useSidebar
 } from './ui/sidebar';
+import { useQueryClient } from '@tanstack/solid-query';
+import { fetchAlbums, fetchSongs } from '../lib/apiService';
 // Tooltip components are not directly used by AppSidebar itself, but by its parent in main.tsx
 // However, SidebarMenuButton can accept a tooltip prop, which is used here.
 // So, if SidebarMenuButton itself internally uses Tooltip, these might not be needed here directly,
@@ -32,12 +34,28 @@ export const adminRoutes: { path: string; name: string; iconName: IconName }[] =
 export function AppSidebar() {
   const { setOpenMobile, isMobile, state } = useSidebar();
   const location = useLocation();
+  const queryClient = useQueryClient();
   
   const currentPath = createMemo(() => location().pathname);
 
   const handleLinkClick = () => {
     if (isMobile()) {
       setOpenMobile(false);
+    }
+  };
+
+  const prefetchData = (path: string) => {
+    // Prefetch data based on the route being hovered
+    if (path === '/albums') {
+      queryClient.prefetchQuery({
+        queryKey: ['albums'],
+        queryFn: fetchAlbums,
+      });
+    } else if (path === '/songs') {
+      queryClient.prefetchQuery({
+        queryKey: ['songs'],
+        queryFn: fetchSongs,
+      });
     }
   };
 
@@ -76,6 +94,7 @@ export function AppSidebar() {
           preload="intent"
           class="w-full text-left"
           onClick={handleLinkClick}
+          onMouseEnter={() => prefetchData(route.path)}
           tooltip={route.name}
           isActive={isActive()}
         >
